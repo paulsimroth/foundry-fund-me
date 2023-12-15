@@ -1,49 +1,54 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {PriceConverter} from "./PriceConverter.sol";
 
 // Custom error
-error NotOwner();
+error FundMe__NotOwner();
 
 contract FundMe {
     using PriceConverter for uint256;
 
     uint256 public constant MIN_USD = 5 * 1e18;
 
-    address[] public funders;
-    mapping(address => uint256) public addressToAmount;
+    address[] private s_funders;
+    mapping(address => uint256) private s_addressToAmount;
+    address private immutable i_owner;
+    AggregatorV3Interface private s_priceFeed;
 
-    address public immutable i_owner;
-
-    constructor() {
+    constructor(address priceFeed) {
         i_owner = msg.sender;
+        s_priceFeed = AggregatorV3Interface(priceFeed);
     }
 
     modifier onlyOwner() {
         /* require(msg.sender == i_owner, "Only Owner allowed"); */
         // Use if statement and custom error for gas optimization
         if (msg.sender != i_owner) {
-            revert NotOwner();
+            revert FundMe__NotOwner();
         }
         _;
     }
 
     function fund() public payable {
-        require(msg.value.getConversionRate() >= MIN_USD, "Not enough ETH");
-        funders.push(msg.sender);
-        addressToAmount[msg.sender] += msg.value;
+        require(
+            msg.value.getConversionRate(s_priceFeed) >= MIN_USD,
+            "Not enough ETH"
+        );
+        s_funders.push(msg.sender);
+        s_addressToAmount[msg.sender] += msg.value;
     }
 
     function withdraw() public onlyOwner {
         // set mapping of funders to  0
-        for (uint256 i = 0; i < funders.length; i++) {
-            address funder = funders[i];
-            addressToAmount[funder] = 0;
+        for (uint256 i = 0; i < s_funders.length; i++) {
+            address funder = s_funders[i];
+            s_addressToAmount[funder] = 0;
         }
 
         // reset array of funders by creating a new and empty array
-        funders = new address[](0);
+        s_funders = new address[](0);
 
         //withdraw all funds
         (bool callSuccess, ) = payable(msg.sender).call{
@@ -52,11 +57,36 @@ contract FundMe {
         require(callSuccess, "call failed");
     }
 
+    /** Fallback and Receive Functions */
     receive() external payable {
         fund();
     }
 
     fallback() external payable {
         fund();
+    }
+
+    /** Getter Functions */
+
+    function getAddressToAmountFunded(
+        address fundingAddress
+    ) external view returns (uint256) {
+        return s_addressToAmount[fundingAddress];
+    }
+
+    function getVersion() external view returns (uint256) {
+        return s_priceFeed.version();
+    }
+
+    function getFunder(uint256 index) external view returns (address) {
+        return s_funders[index];
+    }
+
+    function getOwner() external view returns (address) {
+        return i_owner;
+    }
+
+    function getPriceFeed() external view returns (AggregatorV3Interface) {
+        return s_priceFeed;
     }
 }
