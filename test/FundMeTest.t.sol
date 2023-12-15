@@ -14,6 +14,8 @@ contract FundMeTest is Test {
     uint256 constant STARTING_BALANCE = 10 ether;
     // Set 1 ETH as constant to use for testing transactions
     uint256 constant SEND_VALUE = 0.1 ether;
+    // Gas Price for local testing
+    uint256 constant GAS_PRICE = 1;
 
     function setUp() external {
         /**
@@ -114,8 +116,35 @@ contract FundMeTest is Test {
         uint256 startingOwnerBalance = fundMe.getOwner().balance;
         uint256 startingFundMeBalance = address(fundMe).balance;
 
+        // Set Gas Price; Anvil defaults to 0;
+        vm.txGasPrice(GAS_PRICE);
         vm.prank(fundMe.getOwner());
         fundMe.withdraw();
+
+        assert(address(fundMe).balance == 0);
+        assert(
+            startingFundMeBalance + startingOwnerBalance ==
+                fundMe.getOwner().balance
+        );
+    }
+
+    function testWithdrawFromMultipleFundersCheaper() public funded {
+        // Create multiple users and fund contract
+        uint160 numberOfFunders = 10;
+        uint160 startingFunderIndex = 1;
+
+        for (uint160 i = startingFunderIndex; i < numberOfFunders; i++) {
+            hoax(address(i), SEND_VALUE);
+            fundMe.fund{value: SEND_VALUE}();
+        }
+
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+
+        // Set Gas Price; Anvil defaults to 0;
+        vm.txGasPrice(GAS_PRICE);
+        vm.prank(fundMe.getOwner());
+        fundMe.cheaperWithdraw();
 
         assert(address(fundMe).balance == 0);
         assert(

@@ -40,6 +40,21 @@ contract FundMe {
         s_addressToAmount[msg.sender] += msg.value;
     }
 
+    // Gas optimzied version of function withdraw() with minimized storage reads
+    function cheaperWithdraw() public onlyOwner {
+        uint256 funderLength = s_funders.length;
+
+        for (uint256 i = 0; i < funderLength; i++) {
+            address funder = s_funders[i];
+            s_addressToAmount[funder] = 0;
+        }
+        s_funders = new address[](0);
+        (bool callSuccess, ) = payable(msg.sender).call{
+            value: address(this).balance
+        }("");
+        require(callSuccess, "call failed");
+    }
+
     function withdraw() public onlyOwner {
         // set mapping of funders to  0
         for (uint256 i = 0; i < s_funders.length; i++) {
@@ -67,7 +82,6 @@ contract FundMe {
     }
 
     /** Getter Functions */
-
     function getAddressToAmountFunded(
         address fundingAddress
     ) external view returns (uint256) {
