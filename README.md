@@ -27,6 +27,11 @@ $ forge build
 $ forge test
 ```
 
+Run local tests on Sepolia by forking
+```shell
+$ forge test --fork-url $SEPOLIA_RPC_URL
+```
+
 ### Format
 
 ```shell
@@ -40,7 +45,7 @@ $ forge snapshot
 ```
 
 ### Anvil
-
+Anvil is Foundrys local dev blockchain
 ```shell
 $ anvil
 ```
@@ -48,19 +53,11 @@ $ anvil
 ### Deploy
 
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ forge script script/DeployFundMe.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY
 ```
 
 ### Cast
 
 ```shell
 $ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
 ```
