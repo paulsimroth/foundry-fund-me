@@ -23,8 +23,7 @@ contract FundMe {
     }
 
     modifier onlyOwner() {
-        /* require(msg.sender == i_owner, "Only Owner allowed"); */
-        // Use if statement and custom error for gas optimization
+        // Use if statement and custom error instead of require() for gas optimization
         if (msg.sender != i_owner) {
             revert FundMe__NotOwner();
         }

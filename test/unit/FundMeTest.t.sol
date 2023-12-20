@@ -78,8 +78,10 @@ contract FundMeTest is Test {
     }
 
     function testOnlyOwnerCanWithdraw() public funded {
+        // Arrange
         vm.expectRevert();
         vm.prank(USER);
+        // Act / Assert
         fundMe.withdraw();
     }
 
